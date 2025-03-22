@@ -14,22 +14,29 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
+        repository: tengpeng1888/immortalwrt  # 你的仓库地址
         path: immortalwrt  # 将源码检出到 immortalwrt 目录
 
-    # 2. 设置编译环境
+    # 2. 检查源码目录结构
+    - name: Check directory structure
+      run: |
+        ls -al immortalwrt
+        ls -al immortalwrt/scripts  # 检查 scripts 目录是否存在
+
+    # 3. 设置编译环境
     - name: Set up environment
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential libncurses5-dev git python3
 
-    # 3. 进入源码目录并更新 feeds
+    # 4. 进入源码目录并更新 feeds
     - name: Update feeds
       run: |
         cd immortalwrt
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-    # 4. 配置 Target 系统
+    # 5. 配置 Target 系统
     - name: Configure target
       run: |
         cd immortalwrt
@@ -38,13 +45,13 @@ jobs:
         echo "CONFIG_TARGET_ramips_mt7620_DEVICE_psg1218=y" >> .config
         make defconfig
 
-    # 5. 开始编译固件
+    # 6. 开始编译固件
     - name: Build firmware
       run: |
         cd immortalwrt
         make -j$(nproc) V=s  # 使用多线程编译，V=s 显示详细日志
 
-    # 6. 上传编译好的固件
+    # 7. 上传编译好的固件
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
