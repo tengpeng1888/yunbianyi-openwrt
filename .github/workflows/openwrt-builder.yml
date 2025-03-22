@@ -2,38 +2,51 @@ name: Build ImmortalWrt for PSG1218
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches: [ main ]  # 触发编译的分支，默认为 main
+  workflow_dispatch:    # 允许手动触发
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # 使用最新的 Ubuntu 环境
+
     steps:
+    # 1. 检出你的 ImmortalWrt 源码
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        path: immortalwrt  # 将源码检出到 immortalwrt 目录
 
+    # 2. 设置编译环境
     - name: Set up environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential libncurses5-dev git
+        sudo apt-get install -y build-essential libncurses5-dev git python3
 
+    # 3. 进入源码目录并更新 feeds
     - name: Update feeds
       run: |
+        cd immortalwrt
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
+    # 4. 配置 Target 系统
     - name: Configure target
       run: |
+        cd immortalwrt
         echo "CONFIG_TARGET_ramips=y" > .config
         echo "CONFIG_TARGET_ramips_mt7620=y" >> .config
         echo "CONFIG_TARGET_ramips_mt7620_DEVICE_psg1218=y" >> .config
         make defconfig
 
+    # 5. 开始编译固件
     - name: Build firmware
-      run: make -j$(nproc)
+      run: |
+        cd immortalwrt
+        make -j$(nproc) V=s  # 使用多线程编译，V=s 显示详细日志
 
+    # 6. 上传编译好的固件
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: firmware
-        path: bin/targets/ramips/mt7620/
+        path: immortalwrt/bin/targets/ramips/mt7620/
